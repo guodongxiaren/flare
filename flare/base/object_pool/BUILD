@@ -107,6 +107,7 @@ cc_library(
     '//flare/base/internal:cpu',
     '//flare/base/internal:doubly_linked_list',
     '//flare/base/internal:time_keeper',
+    '#pthread',
   ],
   visibility = ['//flare/base:object_pool'],
 )
