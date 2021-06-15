@@ -20,6 +20,7 @@
 #include <memory>
 #include <mutex>
 
+#include "flare/base/align.h"
 #include "flare/base/demangle.h"
 #include "flare/base/exposed_var.h"
 #include "flare/base/internal/annotation.h"
@@ -110,7 +111,7 @@ struct GlobalPoolDescriptor {
 };
 
 // Thread-local object cache.
-struct LocalPoolDescriptor {
+struct alignas(hardware_destructive_interference_size) LocalPoolDescriptor {
   // See comments on `FixedVector` for the reason why `std::vector<...>` is not
   // used here.
   FixedVector objects;
@@ -260,7 +261,7 @@ inline void* Get() {
   auto&& local = descriptors_ptr<T>.local;
   if (FLARE_LIKELY(local /* Initialized */ && !local->objects.empty())) {
     // Thread local cache hit.
-    return local->objects.pop_back()->first;
+    return local->objects.pop_back();
   }
   return InitializeOptAndGetSlow<T>();
 }
@@ -269,7 +270,7 @@ template <class T>
 inline void Put(void* ptr) {
   auto&& [desc, global, local] = descriptors_ptr<T>;
   if (FLARE_LIKELY(local /* Initialized */ && !local->objects.full())) {
-    local->objects.emplace_back(ptr, desc->destroy);
+    local->objects.emplace_back(ptr);
     return;
   }
   return InitializeOptAndPutSlow<T>(ptr);
