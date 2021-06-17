@@ -371,11 +371,15 @@ TEST_P(SystemFiberOrNot, EventFreeOnWakeup) {
   // This UT detects a use-after-free race, but it's can only be revealed by
   // UBSan in most cases, unfortunately.
   RunInFiber(100, GetParam(), [&](auto index) {
+    std::vector<std::thread> ts(1000);
     for (int i = 0; i != 1000; ++i) {
       auto ev = std::make_unique<Event>();
-      std::thread([&] { ev->Set(); }).detach();
+      ts[i] = std::thread([&] { ev->Set(); });
       ev->Wait();
       ev = nullptr;
+    }
+    for (auto&& e : ts) {
+      e.join();
     }
   });
 }
